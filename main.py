@@ -13,24 +13,6 @@ app = Flask(__name__)
 # Habilitar CORS en todas las rutas
 CORS(app)
 
-# Inicializar MediaPipe FaceMesh
-mp_face_mesh = mp.solutions.face_mesh
-face_mesh = mp_face_mesh.FaceMesh(
-    static_image_mode=True,  # Cambiar a True si procesas imágenes estáticas
-    max_num_faces=1,  # Número máximo de rostros a detectar
-    refine_landmarks=True,  # Refinar la detección de puntos faciales
-    min_detection_confidence=0.5,  # Confianza mínima para la detección
-    min_tracking_confidence=0.5  # Confianza mínima para el seguimiento
-)
-
-# image = cv2.imread('ruta/a/tu/imagen.jpg')
-# if image is None:
-#     print("Error al cargar la imagen.")
-# else:
-#     print("Imagen cargada correctamente.")
-
-# import sys
-
 
 @app.route('/', methods=['GET'])
 def index():
@@ -47,10 +29,13 @@ def detect_faces():
     # Abrir la imagen usando PIL y convertirla a formato de OpenCV
     pil_image = Image.open(file)
     image = np.array(pil_image)
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    
+    # Convertir la imagen de BGR a RGB
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # Procesar la imagen para obtener los puntos faciales
-    landmarks = process_image(image)
+    landmarks = process_image(image_rgb)
 
     # Devolver los puntos faciales como JSON
     if landmarks:
@@ -61,9 +46,17 @@ def detect_faces():
 
 
 # Función para procesar la imagen y obtener los puntos faciales
-def process_image(image):
-    # Convertir la imagen de BGR a RGB
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+def process_image(image_rgb):
+    # Inicializar MediaPipe FaceMesh
+    mp_face_mesh = mp.solutions.face_mesh
+    face_mesh = mp_face_mesh.FaceMesh(
+        static_image_mode=True,  # Cambiar a True si procesas imágenes estáticas
+        max_num_faces=1,  # Número máximo de rostros a detectar
+        refine_landmarks=True,  # Refinar la detección de puntos faciales
+        min_detection_confidence=0.5,  # Confianza mínima para la detección
+        min_tracking_confidence=0.5  # Confianza mínima para el seguimiento
+    )
+    
 
     # Pasar la imagen al modelo de MediaPipe
     results = face_mesh.process(image_rgb)
