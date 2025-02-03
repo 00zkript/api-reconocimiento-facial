@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconocimiento Facial</title>
+
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+
+    <style>
+        #imagePreview {
+            max-width: 100%;
+            /* margin-top: 20px; */
+            display: block;
+        }
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none; /* Solo para visualización */
+        }
+        #imageContainer {
+            position: relative;
+            display: inline-block;
+        }
+
+        #uploadForm{
+            display: flex;
+            flex-direction: column;
+        }
+
+
+    </style>
+</head>
+<body class="bg-slate-200">
+    
+    <main class="container m-auto p-4 w-3/4">
+        <div class="p-6 bg-slate-50">
+            <header class="text-center py-2">
+                <h1 class="text-3xl">Sube una imagen para detección facial</h1>
+            </header>
+    
+            <!-- Formulario para subir la imagen -->
+            <section class="py-3">
+                <form id="uploadForm">
+                    <h2 class="text-2xl pb-3">Formulario:</h2>
+    
+                    <div class="pb-3">
+                        <input class="
+                                text-sm 
+                                text-grey-500
+                                file:mr-5 
+                                file:py-2 
+                                file:px-6
+                                file:rounded-md
+                                file:border-0
+                                file:text-sm 
+                                file:font-medium
+                                file:bg-blue-50 
+                                file:text-blue-700
+                                hover:file:cursor-pointer 
+                                hover:file:bg-blue-200
+                                hover:file:text-blue-700
+                            " 
+                            type="file" 
+                            id="imageInput" 
+                            name="image" 
+                            accept="image/*" 
+                            required
+                        >
+                    </div>
+
+                    <div class="pb-3 text-center">
+                        <button class="bg-blue-500 text-white px-4 py-2 rounded-md" type="submit">Enviar Imagen</button>
+                    </div>
+                </form>
+            </section>
+        
+            <!-- Contenedor para la imagen y el canvas -->
+            <section class="w-full py-3">
+                <h2 class="text-2xl pb-3">Resultado:</h2>
+                <div class="flex justify-center p-3 bg-slate-100 rounded-lg">
+                    <div class="w-[500px] bg-white rounded-md"  id="imageContainer">
+                        <img id="imagePreview" src="" alt="Imagen Previa">
+                        <canvas id="canvas"></canvas>
+                    </div>
+                </div>
+            </section>
+        
+            <section class="py-3">
+                <h2 class="text-2xl pb-3">Resultado JSON:</h2>
+                <pre class="bg-slate-100 p-3 rounded-lg relative">
+                    <code class="relative" id="result"></code></pre>
+            </section>
+        </div>
+
+
+    </main>
+
+
+
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevenir envío tradicional
+
+            const formData = new FormData();
+            const fileInput = document.getElementById('imageInput');
+            
+            if (fileInput.files.length > 0) {
+                formData.append('image', fileInput.files[0]); // Agregar la imagen
+
+                const imagePreview = document.getElementById('imagePreview');
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                const reader = new FileReader();
+
+                reader.onload = function (e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.onload = function () {
+                        // Ajustamos el canvas al tamaño de la imagen
+                        canvas.width = imagePreview.width;
+                        canvas.height = imagePreview.height;
+                        
+                        // Una vez que la imagen se carga, hacemos la solicitud a la API
+                        fetch('http://localhost:3030/api/detect_face', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.landmarks) {
+                                // Mostrar el JSON en pantalla para depuración
+                                document.getElementById('result').textContent = JSON.stringify(data.landmarks, null, 2);
+
+                                // Limpiar el canvas antes de dibujar
+                                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                                // Dibujar cada punto: se asume que cada punto es un objeto con keys: x, y, z
+                                data.landmarks.forEach(point => {
+                                    // Multiplicamos las coordenadas normalizadas por el tamaño del canvas
+                                    const x = point.x * canvas.width;
+                                    const y = point.y * canvas.height;
+                                    ctx.beginPath();
+                                    ctx.arc(x, y, 1, 0, 2 * Math.PI); // Dibujar un círculo en (x, y)
+                                    ctx.fillStyle = 'red';
+                                    ctx.fill();
+                                });
+                            } else {
+                                document.getElementById('result').textContent = 'No se detectaron puntos faciales.';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            document.getElementById('result').textContent = 'Hubo un error al procesar la imagen.';
+                        });
+                    };
+                };
+
+                reader.readAsDataURL(fileInput.files[0]);
+            }
+        });
+    </script>
+</body>
+</html>
