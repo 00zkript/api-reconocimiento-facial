@@ -103,7 +103,7 @@ def detect_face_landmarks_video_mediapipe():
 if __name__ == "__main__":
     # Para procesar una imagen:
     image_path = "718ab0e7537f97ef56e5fdba8afc6327.jpg"  # Cambia por la ruta de tu imagen
-    detect_face_landmarks_image_mediapipe(image_path)
+    # detect_face_landmarks_image_mediapipe(image_path)
 
     # Para procesar video, descomenta la siguiente línea:
-    # detect_face_landmarks_video_mediapipe()
+    detect_face_landmarks_video_mediapipe()
